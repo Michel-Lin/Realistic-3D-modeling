@@ -22,13 +22,14 @@
             justify-content: center;
             align-items: center;
             padding: 20px 0;
+            overflow-x: hidden;
         }
 
         /* Logo 区域 */
         .logo-container {
             position: absolute;
-            top: 30px;
-            left: 30px;
+            top: clamp(20px, 5vh, 30px);
+            left: clamp(20px, 5vw, 30px);
             display: flex;
             align-items: center;
             gap: 15px;
@@ -52,6 +53,7 @@
             animation: floatTitle 6s infinite alternate;
             position: relative;
             z-index: 10;
+            margin-bottom: 0; /* 由JS动态控制 */
         }
         h1::before, h1::after {
             content: "";
@@ -74,6 +76,8 @@
             position: relative;
             z-index: 10;
             margin: 0 20px;
+            width: 100%;
+            max-width: 600px;
         }
 
         /* 按钮核心样式 */
@@ -96,6 +100,8 @@
             min-width: clamp(280px, 60vw, 500px);
             text-align: center;
             border: 1px solid rgba(66, 135, 245, 0.3);
+            height: auto; /* 确保按钮高度自适应内容 */
+            display: inline-block;
         }
         .btn::before {
             content: "►";
@@ -144,7 +150,6 @@
         /* 底部状态条 */
         .status-bar {
             position: absolute;
-            bottom: clamp(60px, 10vh, 120px); /* 增加底部距离，确保不重叠 */
             width: 80%;
             height: 3px;
             background: linear-gradient(90deg, transparent, #4287f5, transparent);
@@ -164,7 +169,6 @@
         /* 底部信息 */
         .bottom-info {
             position: absolute;
-            bottom: clamp(20px, 4vh, 40px); /* 增加底部距离，确保不重叠 */
             width: 100%;
             display: flex;
             flex-direction: column;
@@ -180,8 +184,8 @@
             gap: clamp(15px, 3vw, 25px);
         }
         .tech-icon {
-            width: clamp(18px, 4vw, 42px); /* 增大最大尺寸 */
-            height: clamp(18px, 4vw, 42px); /* 增大最大尺寸 */
+            width: clamp(18px, 4vw, 42px);
+            height: clamp(18px, 4vw, 42px);
             filter: drop-shadow(0 0 5px rgba(66, 135, 245, 0.3));
             transition: all 0.3s ease;
         }
@@ -248,8 +252,6 @@
             .tech-icon { width: clamp(16px, 4vw, 30px); height: clamp(16px, 4vw, 30px); }
             .maker-info { font-size: clamp(0.65rem, 2vw, 0.9rem); }
             .btn-sub-text { font-size: clamp(0.6rem, 2vw, 0.75rem); }
-            .status-bar { bottom: clamp(45px, 8vh, 80px); }
-            .bottom-info { bottom: clamp(15px, 3vh, 30px); }
         }
 
         @media (min-width: 769px) and (max-width: 1024px) {
@@ -302,15 +304,15 @@
     <!-- 底部信息 -->
     <div class="bottom-info">
         <div class="tech-icons">
-            <!-- GitHub图标超链接（指向GitHub官网或相关仓库） -->
+            <!-- GitHub图标超链接 -->
             <a href="https://github.com" target="_blank" title="GitHub">
                 <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/github.svg" alt="GitHub" class="tech-icon">
             </a>
-            <!-- Cesium图标超链接（指向Cesium官网） -->
+            <!-- Cesium图标超链接 -->
             <a href="https://cesium.com" target="_blank" title="Cesium">
                 <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/cesium.svg" alt="Cesium" class="tech-icon">
             </a>
-            <!-- WebGL图标超链接（指向WebGL官方文档） -->
+            <!-- WebGL图标超链接 -->
             <a href="https://www.khronos.org/webgl/" target="_blank" title="WebGL">
                 <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/webgl.svg" alt="WebGL" class="tech-icon">
             </a>
@@ -323,7 +325,7 @@
     <!-- 粒子库 -->
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <script>
-        // 粒子背景配置（增强效果）
+        // 粒子背景配置
         particlesJS("particles-js", {
             "particles": {
                 "number": { "value": 100, "density": { "enable": true, "value_area": 800 } },
@@ -372,48 +374,42 @@
             "retina_detect": true
         });
 
-        // 动态调整模型入口和按钮之间的距离
-        function adjustTitleButtonSpacing() {
+        // 计算元素尺寸并设置位置关系
+        function calculateLayout() {
+            const windowHeight = window.innerHeight;
+            const windowWidth = window.innerWidth;
             const h1 = document.querySelector('h1');
             const btnContainer = document.querySelector('.btn-container');
-            const windowHeight = window.innerHeight;
-            
-            // 计算间距（根据屏幕高度动态调整）
-            let spacing;
-            if (windowHeight < 600) {
-                spacing = '3rem'; // 小屏幕间距
-            } else if (windowHeight < 900) {
-                spacing = '6rem'; // 中等屏幕间距
-            } else {
-                spacing = '10rem'; // 大屏幕间距
-            }
-            
-            // 应用间距
-            h1.style.marginBottom = spacing;
-        }
-        
-        // 动态调整底部元素与底部线的间距
-        function adjustFooterSpacing() {
             const statusBar = document.querySelector('.status-bar');
             const bottomInfo = document.querySelector('.bottom-info');
-            const windowHeight = window.innerHeight;
             
-            // 计算底部元素之间的间距
-            const footerSpacing = windowHeight < 600 ? '1.5rem' : '2.5rem';
+            // 计算底部信息区域高度
+            const bottomInfoHeight = bottomInfo.offsetHeight;
             
-            // 应用间距
-            statusBar.style.bottom = `calc(${bottomInfo.offsetHeight + 40}px + ${footerSpacing})`;
+            // 设置底部信息位置（距离底部有一定距离）
+            const bottomMargin = windowHeight < 600 ? 10 : 20;
+            bottomInfo.style.bottom = `${bottomMargin}px`;
+            
+            // 设置状态条位置（在底部信息上方，保持固定间距）
+            const statusBarGap = windowHeight < 600 ? 15 : 25;
+            statusBar.style.bottom = `${bottomInfoHeight + bottomMargin + statusBarGap}px`;
+            
+            // 计算标题与按钮容器的间距
+            const btnContainerHeight = btnContainer.offsetHeight;
+            const bottomAreaHeight = bottomInfoHeight + statusBarGap + 3 + statusBarGap; // 底部总高度
+            const availableHeight = windowHeight - h1.offsetHeight - btnContainerHeight - bottomAreaHeight - 100;
+            const titleBottomMargin = Math.max(availableHeight / 2, windowHeight < 600 ? 30 : 60);
+            h1.style.marginBottom = `${titleBottomMargin}px`;
         }
         
-        // 初始调用
-        adjustTitleButtonSpacing();
-        adjustFooterSpacing();
+        // 初始计算并应用布局
+        calculateLayout();
         
-        // 监听窗口大小变化，实时调整
-        window.addEventListener('resize', () => {
-            adjustTitleButtonSpacing();
-            adjustFooterSpacing();
-        });
+        // 监听窗口大小变化，实时调整布局
+        window.addEventListener('resize', calculateLayout);
+        
+        // 监听窗口加载完成后再次计算（确保图片等资源加载完成）
+        window.addEventListener('load', calculateLayout);
     </script>
 </body>
-</html>    
+</html>
