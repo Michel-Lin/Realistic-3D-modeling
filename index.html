@@ -156,6 +156,7 @@
             border-radius: 3px;
             overflow: hidden;
             z-index: 10;
+            bottom: clamp(10px, 2vh, 15px); /* 比底部信息更靠下，保持间距 */
         }
         .status-bar::after {
             content: "";
@@ -169,13 +170,15 @@
         /* 底部信息 */
         .bottom-info {
             position: absolute;
-            width: 100%;
+            width: auto; /* 取消100%宽度，避免占满整行 */
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center;
-            gap: clamp(8px, 1.5vh, 15px); /* 图标和文字之间的间距 */
+            align-items: flex-end; /* 右对齐内部元素 */
+            gap: clamp(8px, 1.5vh, 15px);
             z-index: 10;
+            right: clamp(20px, 5vw, 30px); /* 距离右侧有间距 */
+            bottom: clamp(20px, 3vh, 30px); /* 距离底部基础间距 */
         }
         .tech-icons {
             display: flex;
@@ -380,25 +383,10 @@
             const windowWidth = window.innerWidth;
             const h1 = document.querySelector('h1');
             const btnContainer = document.querySelector('.btn-container');
-            const statusBar = document.querySelector('.status-bar');
-            const bottomInfo = document.querySelector('.bottom-info');
-            
-            // 计算底部信息区域高度
-            const bottomInfoHeight = bottomInfo.offsetHeight;
-            
-            // 设置底部信息位置（距离底部有一定距离）
-            const bottomMargin = windowHeight < 600 ? 10 : 20;
-            bottomInfo.style.bottom = `${bottomMargin}px`;
-            
-            // 设置状态条位置（在底部信息上方，保持固定间距）
-            const statusBarGap = windowHeight < 600 ? 15 : 25;
-            statusBar.style.bottom = `${bottomInfoHeight + bottomMargin + statusBarGap}px`;
             
             // 计算标题与按钮容器的间距
             const btnContainerHeight = btnContainer.offsetHeight;
-            const bottomAreaHeight = bottomInfoHeight + statusBarGap + 3 + statusBarGap; // 底部总高度
-            const availableHeight = windowHeight - h1.offsetHeight - btnContainerHeight - bottomAreaHeight - 100;
-            const titleBottomMargin = Math.max(availableHeight / 2, windowHeight < 600 ? 30 : 60);
+            const titleBottomMargin = Math.max((windowHeight - h1.offsetHeight - btnContainerHeight) / 2 - 50, 30);
             h1.style.marginBottom = `${titleBottomMargin}px`;
         }
         
