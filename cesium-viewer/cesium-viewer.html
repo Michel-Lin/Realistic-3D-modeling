@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
-    <title>3D Tiles 查看器</title>
+    <title>3D Tiles 查看器 —— DJI L1 激光雷达</title>
     <!-- 引入Cesium CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -54,10 +54,101 @@
             }
         }
     </style>
+    <style>
+        body {
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            width: 100vw;
+            font-family: 'Inter', sans-serif;
+            background: black;
+            text-shadow: 0 0 3px black;
+        }
+        a, body {
+            color: white;
+        }
+        #cesiumContainer {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        .scene {
+            position: absolute;
+            display: flex;
+            top: 0;
+            right: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 2;
+            height: 100%;
+            width: 100%;
+            align-items: center;
+            justify-content: center;
+        }
+        .cube-wrapper {
+            transform-style: preserve-3d;
+        }
+        .cube {
+            transform-style: preserve-3d;
+            transform: rotateX(45deg) rotateZ(45deg);
+            animation: rotation 2s infinite;
+        }
+        .cube-faces {
+            transform-style: preserve-3d;
+            height: 80px;
+            width: 80px;
+            position: relative;
+            transform-origin: 0 0;
+            transform: translateX(0) translateY(0) translateZ(-40px);
+        }
+        .cube-face {
+            position: absolute;
+            inset: 0;
+            background: #165DFF;
+            border: solid 1px #ffffff;
+        }
+        .cube-face.top {
+            transform: translateZ(80px);
+        }
+        .cube-face.front {
+            transform-origin: 0 50%;
+            transform: rotateY(-90deg);
+        }
+        .cube-face.back {
+            transform-origin: 0 50%;
+            transform: rotateY(-90deg) translateZ(-80px);
+        }
+        .cube-face.right {
+            transform-origin: 50% 0;
+            transform: rotateX(-90deg) translateY(-80px);
+        }
+        .cube-face.left {
+            transform-origin: 50% 0;
+            transform: rotateX(-90deg) translateY(-80px) translateZ(80px);
+        }
+        @keyframes rotation {
+            0% {
+                transform: rotateX(45deg) rotateY(0) rotateZ(45deg);
+                animation-timing-function: cubic-bezier(0.17, 0.84, 0.44, 1);
+            }
+            50% {
+                transform: rotateX(45deg) rotateY(0) rotateZ(225deg);
+                animation-timing-function: cubic-bezier(0.76, 0.05, 0.86, 0.06);
+            }
+            100% {
+                transform: rotateX(45deg) rotateY(0) rotateZ(405deg);
+                animation-timing-function: cubic-bezier(0.17, 0.84, 0.44, 1);
+            }
+        }
+    </style>
 </head>
 <body class="font-inter bg-neutral text-white overflow-hidden h-screen flex flex-col">
     <!-- 顶部导航栏 -->
-    <header class="bg-secondary/80 backdrop-blur-sm border-b border-primary/30 z-10">
+    <header class="bg-secondary/80 backdrop-blur-sm border-b border-primary/30 z-10 fixed top-0 left-0 right-0">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-3">
                 <i class="fa fa-cube text-primary text-2xl"></i>
@@ -77,10 +168,10 @@
     <!-- 主内容区域 -->
     <main class="flex-1 relative">
         <!-- Cesium地图容器 -->
-        <div id="cesiumContainer" class="w-full h-full"></div>
+        <div id="cesiumContainer" class="w-full h-full pt-14"></div>
 
-        <!-- 控制面板 -->
-        <div class="absolute top-4 left-4 bg-surface/90 backdrop-blur-md rounded-lg shadow-lg border border-primary/30 p-4 w-72 z-20 transition-all duration-300 transform hover:shadow-xl">
+        <!-- 控制面板 - 调整top值避免与顶栏重叠 -->
+        <div class="absolute top-16 left-4 bg-surface/90 backdrop-blur-md rounded-lg shadow-lg border border-primary/30 p-4 w-72 z-20 transition-all duration-300 transform hover:shadow-xl">
             <h2 class="text-lg font-semibold mb-3 flex items-center">
                 <i class="fa fa-sliders text-primary mr-2"></i> 视图控制
             </h2>
@@ -98,9 +189,8 @@
             </div>
         </div>
 
-        <!-- 信息面板 -->
-        <div id="infoPanel" class="absolute top-20 right-4 bg-surface/90 backdrop-blur-md rounded-lg shadow-lg border border-primary/30 p-4 z-20 hidden transition-all duration-300 transform hover:shadow-xl min-w-[280px]">
-            <!-- 面板内容保持不变 -->
+        <!-- 信息面板 - 调整top值避免与顶栏重叠 -->
+        <div id="infoPanel" class="absolute top-16 right-4 bg-surface/90 backdrop-blur-md rounded-lg shadow-lg border border-primary/30 p-4 z-20 hidden transition-all duration-300 transform hover:shadow-xl min-w-[280px]">
             <div class="flex justify-between items-center mb-3">
                 <h2 class="text-lg font-semibold flex items-center">
                     <i class="fa fa-info-circle text-primary mr-2"></i> 模型信息
@@ -111,13 +201,11 @@
             </div>
             <div class="space-y-3 text-sm">
                 <div class="p-2 bg-neutral rounded">
-                    <div class="p-2 bg-neutral rounded">
-                        <div class="text-gray-400 text-sm">数据来源：DJI L1 Lidar</div>
-                        <div class="text-gray-400 text-sm">生成工具：DJI Terra</div>
-                        <div class="text-gray-400 text-sm">数据优化：<a href="https://github.com/CesiumGS/3d-tiles-tools" class="text-link hover:underline">Github/CesiumGS/3d-tiles-tools</a></div>
-                        <div class="text-gray-400 text-sm">数据验证：<a href="https://github.com/CesiumGS/3d-tiles-validator" class="text-link hover:underline">Github/CesiumGS/3d-tiles-validator</a></div>
-                        <div class="text-gray-400 text-sm">数据格式：*.b3dm</div>
-                    </div>
+                    <div class="text-gray-400 text-sm">数据来源：DJI L1 Lidar</div>
+                    <div class="text-gray-400 text-sm">生成工具：DJI Terra</div>
+                    <div class="text-gray-400 text-sm">数据优化：<a href="https://github.com/CesiumGS/3d-tiles-tools" class="text-link hover:underline">Github/CesiumGS/3d-tiles-tools</a></div>
+                    <div class="text-gray-400 text-sm">数据验证：<a href="https://github.com/CesiumGS/3d-tiles-validator" class="text-link hover:underline">Github/CesiumGS/3d-tiles-validator</a></div>
+                    <div class="text-gray-400 text-sm">数据格式：*.b3dm</div>
                 </div>
                 
                 <div>
@@ -150,8 +238,8 @@
         </div>
 
         <!-- 帮助面板 -->
-        <div id="helpPanel" class="absolute bottom-4 right-4 bg-surface/90 backdrop-blur-md rounded-lg shadow-lg border border-primary/30 p-4 w-72 z-20 hidden transition-all duration-300 transform hover:shadow-xl">
-            <div class="flex justify-between items-center mb-3">
+        <div id="helpPanel" class="absolute bottom-4 right-4 bg-surface/90 backdrop-blur-md rounded-lg shadow-lg border border-primary/30 p-4 w-80 z-20 hidden transition-all duration-300 transform hover:shadow-xl max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-3 sticky top-0 bg-surface/90 z-10">
                 <h2 class="text-lg font-semibold flex items-center">
                     <i class="fa fa-question-circle text-primary mr-2"></i> 操作帮助
                 </h2>
@@ -183,14 +271,19 @@
 
         <!-- 加载指示器 -->
         <div id="loadingIndicator" class="fixed inset-0 flex items-center justify-center bg-neutral/80 z-50">
-            <div class="text-center">
-                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-                <h3 class="text-lg font-semibold">正在加载3D模型...</h3>
-                <p class="text-gray-400 text-sm mt-2">请稍候，这可能需要一些时间...</p>
-                <div class="w-64 bg-gray-700 rounded-full h-2.5 mt-4 overflow-hidden">
-                    <div id="loadingProgress" class="bg-primary h-2.5 rounded-full" style="width: 0%"></div>
+            <div class="scene">
+                <div class="cube-wrapper">
+                    <div class="cube">
+                        <div class="cube-faces">
+                            <div class="cube-face bottom"></div>
+                            <div class="cube-face top"></div>
+                            <div class="cube-face left"></div>
+                            <div class="cube-face right"></div>
+                            <div class="cube-face back"></div>
+                            <div class="cube-face front"></div>
+                        </div>
+                    </div>
                 </div>
-                <p id="loadingText" class="text-gray-400 text-xs mt-2">准备中...</p>
             </div>
         </div>
     </main>
@@ -253,15 +346,15 @@
                     preloadWhenHidden: true,
                     loadSiblings: true,
                     preferLeaves: false,
-                    maximumScreenSpaceError: 2, // 提高默认值（原2→4），降低加载压力
-                    maximumMemoryUsage: 4096,   // 适当提高内存限制（原2048→3072，视显卡显存调整）
-                    cullRequestsWhileMoving: false, // 关键：拖动时不取消请求（原true可能导致加载中断）
+                    maximumScreenSpaceError: 2,
+                    maximumMemoryUsage: 4096,
+                    cullRequestsWhileMoving: false,
                     cullWithChildrenBounds: true,
                     preloadAncestors: true,
                     dynamicScreenSpaceError: true,
-                    dynamicScreenSpaceErrorDensity: 0.001, // 降低密度（原0.00278），远处瓦片更早加载
-                    dynamicScreenSpaceErrorFactor: 8.0,    // 提高因子，加速细节瓦片加载
-                    dynamicScreenSpaceErrorHeightFalloff: 0.5, // 增加高度衰减，适应高低差大的模型
+                    dynamicScreenSpaceErrorDensity: 0.001,
+                    dynamicScreenSpaceErrorFactor: 8.0,
+                    dynamicScreenSpaceErrorHeightFalloff: 0.5,
                 });
 
                 // 添加到场景
@@ -272,14 +365,12 @@
                 isModelLoaded = true;
                 
                 // 更新加载进度
-                document.getElementById('loadingProgress').style.width = '100%';
-                document.getElementById('loadingText').textContent = '加载完成';
+                document.getElementById('modelStatus').innerHTML = '<i class="fa fa-check-circle mr-1"></i> 已加载';
+                document.getElementById('modelStatus').className = 'bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs font-medium';
                 
-                // 3秒后隐藏加载指示器
+                // 1秒后隐藏加载指示器
                 setTimeout(() => {
                     document.getElementById('loadingIndicator').style.display = 'none';
-                    document.getElementById('modelStatus').innerHTML = '<i class="fa fa-check-circle mr-1"></i> 已加载';
-                    document.getElementById('modelStatus').className = 'bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs font-medium';
                 }, 1000);
                 
                 // 设置相机位置
@@ -296,7 +387,13 @@
                 viewer.scene.camera.frustum.near = 0.1;
             } catch (error) {
                 console.error('加载3D Tileset时出错:', error);
-                document.getElementById('loadingText').textContent = '加载失败';
+                document.getElementById('loadingIndicator').innerHTML = `
+                    <div class="text-center">
+                        <i class="fa fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+                        <h3 class="text-lg font-semibold text-red-400">加载失败</h3>
+                        <p class="text-gray-400 text-sm mt-2">无法加载3D模型，请检查网络连接</p>
+                    </div>
+                `;
                 document.getElementById('modelStatus').innerHTML = '<i class="fa fa-exclamation-circle mr-1"></i> 加载失败';
                 document.getElementById('modelStatus').className = 'bg-red-500/20 text-red-400 px-2 py-1 rounded-full text-xs font-medium';
             }
@@ -307,26 +404,7 @@
             if (!isModelLoaded || !tileset) return;
             
             try {
-                // 更新瓦片统计
-                if (tileset.tilesLoaded !== undefined) {
-                    document.getElementById('tilesLoaded').textContent = tileset.tilesLoaded;
-                }
-                
-                if (tileset.tilesRendered !== undefined) {
-                    document.getElementById('tilesRendered').textContent = tileset.tilesRendered;
-                }
-                
-                // 更新内存使用情况
-                if (tileset.memoryUsage !== undefined) {
-                    const memoryUsage = (tileset.memoryUsage / 1024).toFixed(1);
-                    document.getElementById('memoryUsage').textContent = `${memoryUsage} MB`;
-                }
-            } catch (error) {
-                console.warn('更新统计信息时出错:', error);
-            }
-            
-            // 更新当前相机位置
-            try {
+                // 更新相机位置信息
                 const cartographic = Cesium.Cartographic.fromCartesian(viewer.camera.position);
                 const longitude = Cesium.Math.toDegrees(cartographic.longitude).toFixed(6);
                 const latitude = Cesium.Math.toDegrees(cartographic.latitude).toFixed(6);
@@ -347,8 +425,7 @@
             
             // 控制面板交互
             document.getElementById('toggleInfo').addEventListener('click', function() {
-                const panel = document.getElementById('infoPanel');
-                panel.classList.toggle('hidden');
+                document.getElementById('infoPanel').classList.toggle('hidden');
             });
             
             document.getElementById('closeInfo').addEventListener('click', function() {
@@ -356,8 +433,7 @@
             });
             
             document.getElementById('toggleHelp').addEventListener('click', function() {
-                const panel = document.getElementById('helpPanel');
-                panel.classList.toggle('hidden');
+                document.getElementById('helpPanel').classList.toggle('hidden');
             });
             
             document.getElementById('closeHelp').addEventListener('click', function() {
@@ -376,7 +452,7 @@
             });
             
             // 添加鼠标悬停效果
-            const controlPanel = document.querySelector('.absolute.top-4.left-4');
+            const controlPanel = document.querySelector('.absolute.top-16.left-4');
             const infoPanel = document.getElementById('infoPanel');
             const helpPanel = document.getElementById('helpPanel');
             
@@ -384,6 +460,7 @@
                 if (panel) {
                     panel.addEventListener('mouseenter', function() {
                         this.classList.add('scale-[1.01]');
+                        this.style.transition = 'all 0.3s ease';
                     });
                     
                     panel.addEventListener('mouseleave', function() {
@@ -395,4 +472,3 @@
     </script>
 </body>
 </html>
-    
