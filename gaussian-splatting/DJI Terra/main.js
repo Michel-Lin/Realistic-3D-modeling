@@ -743,7 +743,7 @@ async function main() {
         viewMatrix = JSON.parse(decodeURIComponent(location.hash.slice(1)));
         carousel = false;
     } catch (err) {}
-    const url = params.get("url") || "DJI Terra.splat";
+    const url = params.get("url") || "https://huggingface.co/Michel-Lin/my-3d-models/resolve/main/DJI Terra.splat";
     const req = await fetch(url);
     console.log(req);
     if (!req.ok) {

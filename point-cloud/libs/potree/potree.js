@@ -66338,7 +66338,7 @@ void main() {
 				let {byteOffset, byteSize} = node;
 
 
-				let urlOctree = `${this.url}/../octree.bin`;
+				let urlOctree = "https://huggingface.co/Michel-Lin/my-3d-models/resolve/main/octree.bin";
 
 				let first = byteOffset;
 				let last = byteOffset + byteSize - 1n;
