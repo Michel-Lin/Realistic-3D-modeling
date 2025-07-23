@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <title>可视化模型</title>
+    <style>
+        /* 全局 reset + 柔和风格 */
+        * {
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #ffffff; 
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Logo 区域 */
+        .logo-container {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 10;
+        }
+        .logo-text {
+            font-size: 1.5vw;
+            color: #335577; 
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(66, 135, 245, 0.2);
+        }
+
+        /* 3D 标题动画 */
+        h1 {
+            font-size: 5.5rem;
+            color: #2c3e50; 
+            text-transform: uppercase;
+            letter-spacing: 0.3rem;
+            text-shadow: 0 0 12px rgba(66, 135, 245, 0.3), 0 0 20px rgba(66, 135, 245, 0.15);
+            transform: perspective(1000px) rotateX(8deg) rotateY(-3deg);
+            animation: floatTitle 6s infinite alternate;
+            margin-bottom: 15rem;
+            position: relative;
+            z-index: 10;
+        }
+        h1::before, h1::after {
+            content: "";
+            position: absolute;
+            height: 2px;
+            width: 200px;
+            background: linear-gradient(90deg, transparent, #4287f5, transparent);
+            top: 50%;
+        }
+        h1::before { left: -220px; }
+        h1::after { right: -220px; }
+
+        /* 按钮容器 */
+        .btn-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            perspective: 1000px;
+            gap: 1.8rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* 按钮核心样式 */
+        .btn {
+            position: relative; /* 为绝对定位的 .btn-sub-text 提供参考 */
+            padding: 26px 52px;
+            color: #ffffff;
+            font-size: 1.6rem;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.15rem;
+            border-radius: 50px;
+            background: linear-gradient(90deg, #4287f5, #335577); 
+            overflow: hidden;
+            transform: perspective(500px) translateZ(20px);
+            transition: all 0.3s cubic-bezier(0.215, 0.61, 0.355, 1);
+            box-shadow: 0 0 20px rgba(66, 135, 245, 0.25),
+                        0 0 40px rgba(66, 135, 245, 0.15),
+                        inset 0 1px 1px rgba(255, 255, 255, 0.2);
+            min-width: 450px;
+            text-align: center;
+            border: 1px solid rgba(66, 135, 245, 0.3);
+        }
+        .btn::before {
+            content: "►";
+            margin-right: 12px;
+            opacity: 0.8;
+        }
+        .btn:hover {
+            transform: perspective(500px) translateZ(30px) scale(1.05);
+            background: linear-gradient(90deg, #5a95f5, #446688);
+            box-shadow: 0 0 25px rgba(66, 135, 245, 0.35),
+                        0 0 50px rgba(66, 135, 245, 0.25),
+                        inset 0 1px 1px rgba(255, 255, 255, 0.3);
+        }
+        .btn:active {
+            transform: perspective(500px) translateZ(10px) scale(0.97);
+        }
+        .btn::after {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+            opacity: 0;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50px;
+            transition: opacity 0.2s;
+        }
+        .btn:active::after { opacity: 1; }
+
+        /* 关键：Powered by 文字定位到右下角 */
+        .btn-sub-text {
+            position: absolute;
+            bottom: 8px;    /* 距离底部稍近，可微调 */
+            left: 50%; /* 水平居中基准点 */
+            transform: translateX(-50%); /* 向左偏移自身一半宽度，实现完全居中 */
+            font-size: 0.8rem; /* 缩小字体 */
+            color: rgba(255, 255, 255, 0.8); /* 半透明白色 */
+            text-shadow: 0 0 3px rgba(0,0,0,0.3);
+            pointer-events: none; /* 不影响按钮点击 */
+            text-transform: none; /* 新增这一行，取消大写转换 */
+            white-space: nowrap; /* 强制不换行 */
+        }
+
+        /* 底部状态条 */
+        .status-bar {
+            position: absolute;
+            bottom: 100px;
+            width: 80%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #4287f5, transparent);
+            border-radius: 3px;
+            overflow: hidden;
+            z-index: 10;
+        }
+        .status-bar::after {
+            content: "";
+            position: absolute;
+            width: 30%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, #4287f5, transparent);
+            animation: scan 6s infinite linear;
+        }
+
+        /* 底部信息 */
+        .bottom-info {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            z-index: 10;
+        }
+        .tech-icons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 25px;
+        }
+        .tech-icon {
+            width: 36px;
+            height: 36px;
+            filter: drop-shadow(0 0 5px rgba(66, 135, 245, 0.3));
+            transition: all 0.3s ease;
+        }
+        .tech-icon:hover {
+            transform: scale(1.2);
+            filter: drop-shadow(0 0 8px rgba(66, 135, 245, 0.6));
+        }
+        .maker-info {
+            color: #2c3e50;
+            font-size: 1rem;
+            text-shadow: 0 0 5px rgba(66, 135, 245, 0.2);
+            margin: 0;
+        }
+
+        /* 粒子背景（保持原配置） */
+        #particles-js {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* 装饰网格 */
+        .grid-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(66, 135, 245, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(66, 135, 245, 0.08) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 0;
+        }
+
+        /* 动画 */
+        @keyframes floatTitle {
+            0% {
+                transform: perspective(1000px) rotateX(8deg) rotateY(-3deg) translateY(0);
+                text-shadow: 0 0 12px rgba(66, 135, 245, 0.3), 0 0 20px rgba(66, 135, 245, 0.15);
+            }
+            100% {
+                transform: perspective(1000px) rotateX(10deg) rotateY(-1deg) translateY(-25px);
+                text-shadow: 0 0 15px rgba(66, 135, 245, 0.4), 0 0 25px rgba(66, 135, 245, 0.25);
+            }
+        }
+        @keyframes scan {
+            0% { left: -30%; }
+            100% { left: 100%; }
+        }
+
+        /* 响应式适配 */
+        @media (max-width: 1024px) {
+            h1 { font-size: 4rem; }
+            h1::before, h1::after { width: 120px; }
+            h1::before { left: -140px; }
+            h1::after { right: -140px; }
+            .btn { min-width: 380px; font-size: 1.4rem; }
+            .tech-icon { width: 24px; height: 24px; }
+            .btn-sub-text { font-size: 0.75rem; }
+        }
+        @media (max-width: 768px) {
+            h1 { 
+                font-size: 3rem; 
+                letter-spacing: 0.2rem; 
+            }
+            h1::before, h1::after { display: none; }
+            .btn { 
+                min-width: 85vw; 
+                font-size: 1.2rem; 
+                padding: 20px 30px; 
+            }
+            .logo-text { font-size: 1.5rem; }
+            .tech-icon { width: 22px; height: 22px; }
+            .maker-info { font-size: 0.8rem; }
+            .status-bar { bottom: 70px; }
+            .btn-sub-text { font-size: 0.7rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-bg"></div>
+    <div id="particles-js"></div>
+    
+    <!-- Logo -->
+    <div class="logo-container">
+        <div class="logo-text">实习数据 3D 可视化平台</div>
+    </div>
+    
+    <h1>模型入口</h1>
+    
+    <!-- 按钮容器 -->
+    <div class="btn-container">
+        <a class="btn" href="cesium-viewer/cesium-viewer.html" target="_blank">
+            🌐 三维网格模型
+            <span class="btn-sub-text">Powered By Cesium</span>
+        </a>
+
+        <a class="btn" href="gaussian-splatting/DJI Terra/DJI Terra.html" target="_blank">
+            ✨ DJI Terra高斯泼溅模型
+            <span class="btn-sub-text">Powered By DJI Terra</span>
+        </a>
+
+        <a class="btn" href="gaussian-splatting/github-GS/github-GS.html" target="_blank">
+            ✨ GS官方项目训练模型
+            <span class="btn-sub-text">Powered By Github-gaussian-splatting</span>
+        </a>
+
+        <a class="btn" href="point-cloud/pointcloud.html" target="_blank">
+            🟢 点云模型
+            <span class="btn-sub-text">Powered By Potree</span>
+        </a>
+    </div>
+    
+    <!-- 底部信息 -->
+    <div class="bottom-info">
+        <div class="tech-icons">
+            <!-- GitHub图标超链接（指向GitHub官网或相关仓库） -->
+            <a href="https://github.com" target="_blank" title="GitHub">
+                <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/github.svg" alt="GitHub" class="tech-icon">
+            </a>
+            <!-- Cesium图标超链接（指向Cesium官网） -->
+            <a href="https://cesium.com" target="_blank" title="Cesium">
+                <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/cesium.svg" alt="Cesium" class="tech-icon">
+            </a>
+            <!-- WebGL图标超链接（指向WebGL官方文档） -->
+            <a href="https://www.khronos.org/webgl/" target="_blank" title="WebGL">
+                <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/webgl.svg" alt="WebGL" class="tech-icon">
+            </a>
+        </div>
+        <div class="maker-info">网页制作者：赵沁山</div>
+    </div>
+    
+    <div class="status-bar"></div>
+
+    <!-- 粒子库 -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        // 粒子背景配置（增强效果）
+        particlesJS("particles-js", {
+            "particles": {
+                "number": { "value": 100, "density": { "enable": true, "value_area": 800 } },
+                "color": { "value": "#4287f5" }, // 更鲜明的蓝色
+                "shape": { "type": "circle" },
+                "opacity": { 
+                    "value": 0.7, 
+                    "random": true,
+                    "anim": { "enable": true, "speed": 1, "opacity_min": 0.2, "sync": false } 
+                },
+                "size": { 
+                    "value": 3, 
+                    "random": true,
+                    "anim": { "enable": true, "speed": 2, "size_min": 0.5, "sync": false } 
+                },
+                "line_linked": { 
+                    "enable": true, 
+                    "distance": 150, 
+                    "color": "#4287f5", 
+                    "opacity": 0.5, 
+                    "width": 1.5 
+                },
+                "move": { 
+                    "enable": true, 
+                    "speed": 1.2, 
+                    "direction": "none", 
+                    "random": true, 
+                    "straight": false, 
+                    "out_mode": "out", 
+                    "bounce": false,
+                    "attract": { "enable": true, "rotateX": 600, "rotateY": 1200 } 
+                }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": {
+                    "onhover": { "enable": true, "mode": "grab" },
+                    "onclick": { "enable": true, "mode": "push" },
+                    "resize": true
+                },
+                "modes": {
+                    "grab": { "distance": 180, "line_linked": { "opacity": 0.8 } },
+                    "push": { "particles_nb": 10 }
+                }
+            },
+            "retina_detect": true
+        });
+    </script>
+</body>
+</html>

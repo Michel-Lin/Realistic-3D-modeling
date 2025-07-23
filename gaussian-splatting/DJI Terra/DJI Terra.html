@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <title>WebGL 3D Gaussian Splat Viewer —— DJI L1 激光雷达</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#0E2B5C',
+                        neutral: '#1C2534',
+                        surface: '#2A3547',
+                        link: '#0ea5e9',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+        }
+    </style>
+    <style>
+        body {
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            width: 100vw;
+            font-family: 'Inter', sans-serif;
+            background: black;
+            text-shadow: 0 0 3px black;
+        }
+        a, body {
+            color: white;
+        }
+        #canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        #progress {
+            position: absolute;
+            top: 0;
+            height: 5px;
+            background: #165DFF;
+            z-index: 99;
+            transition: width 0.1s ease-in-out;
+        }
+        #message {
+            position: absolute;
+            display: flex;
+            top: 0;
+            right: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 2;
+            height: 100%;
+            width: 100%;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: large;
+            color: red;
+            pointer-events: none;
+        }
+        .scene {
+            position: absolute;
+            display: flex;
+            top: 0;
+            right: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 2;
+            height: 100%;
+            width: 100%;
+            align-items: center;
+            justify-content: center;
+        }
+        .cube-wrapper {
+            transform-style: preserve-3d;
+        }
+        .cube {
+            transform-style: preserve-3d;
+            transform: rotateX(45deg) rotateZ(45deg);
+            animation: rotation 2s infinite;
+        }
+        .cube-faces {
+            transform-style: preserve-3d;
+            height: 80px;
+            width: 80px;
+            position: relative;
+            transform-origin: 0 0;
+            transform: translateX(0) translateY(0) translateZ(-40px);
+        }
+        .cube-face {
+            position: absolute;
+            inset: 0;
+            background: #165DFF;
+            border: solid 1px #ffffff;
+        }
+        .cube-face.top {
+            transform: translateZ(80px);
+        }
+        .cube-face.front {
+            transform-origin: 0 50%;
+            transform: rotateY(-90deg);
+        }
+        .cube-face.back {
+            transform-origin: 0 50%;
+            transform: rotateY(-90deg) translateZ(-80px);
+        }
+        .cube-face.right {
+            transform-origin: 50% 0;
+            transform: rotateX(-90deg) translateY(-80px);
+        }
+        .cube-face.left {
+            transform-origin: 50% 0;
+            transform: rotateX(-90deg) translateY(-80px) translateZ(80px);
+        }
+        @keyframes rotation {
+            0% {
+                transform: rotateX(45deg) rotateY(0) rotateZ(45deg);
+                animation-timing-function: cubic-bezier(0.17, 0.84, 0.44, 1);
+            }
+            50% {
+                transform: rotateX(45deg) rotateY(0) rotateZ(225deg);
+                animation-timing-function: cubic-bezier(0.76, 0.05, 0.86, 0.06);
+            }
+            100% {
+                transform: rotateX(45deg) rotateY(0) rotateZ(405deg);
+                animation-timing-function: cubic-bezier(0.17, 0.84, 0.44, 1);
+            }
+        }
+        body.nohf .nohf {
+            display: none;
+        }
+        body.nohf #progress, body.nohf .cube-face {
+            background: #ff9d0d;
+        }
+    </style>
+</head>
+<body class="font-inter">
+    <script>
+        if(location.host.includes('hf.space')) document.body.classList.add('nohf');
+    </script>
+    
+    <!-- 顶部导航栏 -->
+    <header class="bg-secondary/80 backdrop-blur-sm border-b border-primary/30 z-10 fixed top-0 left-0 right-0">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa fa-cube text-primary text-2xl"></i>
+                <h1 class="text-xl font-bold tracking-tight">WebGL 3D Gaussian Splat Viewer</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="toggleInfo" class="bg-primary/20 hover:bg-primary/40 text-white px-3 py-1.5 rounded transition-all duration-300 flex items-center">
+                    <i class="fa fa-info-circle mr-1.5"></i> 信息
+                </button>
+                <button id="toggleHelp" class="bg-primary/20 hover:bg-primary/40 text-white px-3 py-1.5 rounded transition-all duration-300 flex items-center">
+                    <i class="fa fa-question-circle mr-1.5"></i> 帮助
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 信息面板 -->
+    <div id="infoPanel" class="absolute top-20 right-4 bg-surface/90 backdrop-blur-md rounded-lg shadow-lg border border-primary/30 p-4 z-20 hidden transition-all duration-300 transform hover:shadow-xl min-w-[280px]">
+        <!-- 面板内容保持不变 -->
+        <div class="flex justify-between items-center mb-3">
+            <h2 class="text-lg font-semibold flex items-center">
+                <i class="fa fa-info-circle text-primary mr-2"></i> 模型信息
+            </h2>
+            <button id="closeInfo" class="text-gray-400 hover:text-white transition-colors">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <div class="space-y-3 text-sm">
+            <div class="p-2 bg-neutral rounded">
+                <div class="text-gray-300 text-sm">数据来源：DJI L1 Lidar</div>
+                <div class="text-gray-300 text-sm">模型训练技术支持：DJI Terra</a></div>
+                <div class="text-gray-300 text-sm">WebGL viewer支持：<a href="https://github.com/antimatter15/splat" class="text-link hover:underline">Github/antimatter15/splat</a></div>
+            </div>
+            
+            <div>
+                <h3 class="font-medium mb-1.5">模型状态</h3>
+                <div class="flex items-center">
+                    <span id="modelStatus" class="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full text-xs font-medium">
+                        <i class="fa fa-spinner fa-spin mr-1"></i> 加载中
+                    </span>
+                </div>
+            </div>
+            
+            <div class="pt-2 border-t border-gray-700">
+				<h3 class="font-medium mb-2">性能数据</h3>
+				<div class="grid grid-cols-2 gap-2 text-xs">
+					<div class="bg-neutral p-1.5 rounded">
+						<div class="text-gray-400">帧率 (FPS)</div>
+						<div id="fpsDisplay" class="font-mono">-</div> <!-- 改为独立ID -->
+					</div>
+					<div class="bg-neutral p-1.5 rounded">
+						<div class="text-gray-400">相机编号</div>
+						<div id="camidDisplay" class="font-mono">-</div> <!-- 改为独立ID -->
+					</div>
+				</div>
+                <div class="text-gray-300 text-sm">仓库地址：可下载*.splat或*.ply（需3DGS格式）在https://superspl.at/editor获得更好的渲染与交互体验</div>
+			</div>
+        </div>
+    </div>
+
+    <!-- 帮助面板 -->
+    <div id="helpPanel" class="absolute bottom-4 right-4 bg-surface/90 backdrop-blur-md rounded-lg shadow-lg border border-primary/30 p-4 w-80 z-20 hidden transition-all duration-300 transform hover:shadow-xl max-h-[80vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-3 sticky top-0 bg-surface/90 z-10">
+            <h2 class="text-lg font-semibold flex items-center">
+                <i class="fa fa-question-circle text-primary mr-2"></i> 操作帮助
+            </h2>
+            <button id="closeHelp" class="text-gray-400 hover:text-white transition-colors">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <div class="space-y-4 text-sm">
+            <div>
+                <h3 class="font-medium mb-2 text-link">移动控制（方向键）</h3>
+                <ul class="list-disc pl-5 space-y-1 text-gray-300">
+                    <li>左右方向键：左右平移</li>
+                    <li>上下方向键：前后移动</li>
+                    <li>空格键：跳跃</li>
+                </ul>
+            </div>
+            
+            <div>
+                <h3 class="font-medium mb-2 text-link">相机角度（WASD 键）</h3>
+                <ul class="list-disc pl-5 space-y-1 text-gray-300">
+                    <li>A/D 键：向左 / 向右转动相机</li>
+                    <li>W/S 键：向上 / 向下倾斜相机</li>
+                    <li>Q/E 键：逆时针 / 顺时针旋转相机</li>
+                    <li>I/K 键和 J/L 键：环绕轨道移动</li>
+                </ul>
+            </div>
+            
+            <div>
+                <h3 class="font-medium mb-2 text-link">鼠标操作</h3>
+                <ul class="list-disc pl-5 space-y-1 text-gray-300">
+                    <li>左键点击并拖动：环绕轨道移动</li>
+                    <li>右键点击（按住 Ctrl/Cmd 键）并上下拖动：移动</li>
+                </ul>
+            </div>
+            
+            <div>
+                <h3 class="font-medium mb-2 text-link">触摸（移动端）</h3>
+                <ul class="list-disc pl-5 space-y-1 text-gray-300">
+                    <li>单指操作：环绕轨道移动</li>
+                    <li>双指捏合：前后移动</li>
+                    <li>双指旋转：顺时针 / 逆时针旋转相机</li>
+                    <li>双指平移：左右和上下移动</li>
+                </ul>
+            </div>
+            
+            <div>
+                <h3 class="font-medium mb-2 text-link">其他操作</h3>
+                <ul class="list-disc pl-5 space-y-1 text-gray-300">
+                    <li>按 0-9 数字键：切换到预设的相机视角之一</li>
+                    <li>按 “-” 或 “+” 键：循环切换已加载的相机</li>
+                    <li>按 P 键：恢复默认动画</li>
+                    <li>拖放.ply 文件：转换为.splat 格式</li>
+                    <li>拖放 cameras.json 文件：加载相机设置</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="progress"></div>
+    <div id="message"></div>
+    
+    <!-- 加载指示器 -->
+    <div class="scene" id="spinner">
+        <div class="cube-wrapper">
+            <div class="cube">
+                <div class="cube-faces">
+                    <div class="cube-face bottom"></div>
+                    <div class="cube-face top"></div>
+                    <div class="cube-face left"></div>
+                    <div class="cube-face right"></div>
+                    <div class="cube-face back"></div>
+                    <div class="cube-face front"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <canvas id="canvas"></canvas>
+
+    <script>
+        // 帮助面板控制
+		document.getElementById('toggleHelp').addEventListener('click', function() {
+			document.getElementById('helpPanel').classList.toggle('hidden');
+		});
+		document.getElementById('closeHelp').addEventListener('click', function() {
+			document.getElementById('helpPanel').classList.add('hidden');
+		});
+		document.getElementById('toggleInfo').addEventListener('click', function() {
+			document.getElementById('infoPanel').classList.toggle('hidden');
+		});
+		document.getElementById('closeInfo').addEventListener('click', function() {
+			document.getElementById('infoPanel').classList.add('hidden');
+		});
+
+		// 1. 模型状态监测与更新
+		function updateModelStatus() {
+			const spinner = document.getElementById('spinner');
+			const modelStatus = document.getElementById('modelStatus');
+			
+			// 监测加载动画是否消失（通常表示模型加载完成）
+			const observer = new MutationObserver((mutations) => {
+				mutations.forEach(mutation => {
+					if (spinner.style.display === 'none' || spinner.style.opacity === '0') {
+						modelStatus.innerHTML = '<i class="fa fa-check-circle mr-1"></i> 已加载';
+						modelStatus.className = 'bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs font-medium';
+						observer.disconnect(); // 停止观察
+					}
+				});
+			});
+			
+			observer.observe(spinner, { attributes: true, attributeFilter: ['style'] });
+
+			// 超时保护：如果10秒后仍未加载完成，显示加载缓慢提示
+			setTimeout(() => {
+				if (modelStatus.innerHTML.includes('加载中')) {
+					modelStatus.innerHTML = '<i class="fa fa-exclamation-triangle mr-1"></i> 加载缓慢';
+					modelStatus.className = 'bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full text-xs font-medium';
+				}
+			}, 10000);
+		}
+
+		// 2. 帧率和相机ID实时同步
+		function syncPerformanceData() {
+			// 创建隐藏的占位元素用于捕获main.js的数据输出
+			const fpsProxy = document.createElement('div');
+			fpsProxy.id = 'fps';
+			fpsProxy.style.display = 'none';
+			document.body.appendChild(fpsProxy);
+			
+			const camProxy = document.createElement('div');
+			camProxy.id = 'camid';
+			camProxy.style.display = 'none';
+			document.body.appendChild(camProxy);
+
+			// 使用MutationObserver监听数据变化
+			const fpsDisplay = document.getElementById('fpsDisplay');
+			const camDisplay = document.getElementById('camidDisplay');
+			
+			new MutationObserver((mutations) => {
+				mutations.forEach(mutation => {
+					if (mutation.target.textContent) {
+						fpsDisplay.textContent = mutation.target.textContent;
+					}
+				});
+			}).observe(fpsProxy, { childList: true, characterData: true, subtree: true });
+			
+			new MutationObserver((mutations) => {
+				mutations.forEach(mutation => {
+					if (mutation.target.textContent) {
+						camDisplay.textContent = mutation.target.textContent;
+					}
+				});
+			}).observe(camProxy, { childList: true, characterData: true, subtree: true });
+
+			// 覆盖原main.js中对fps和camid的操作
+			window.updateFPS = (value) => {
+				fpsProxy.textContent = value;
+			};
+			window.updateCamID = (value) => {
+				camProxy.textContent = value;
+			};
+		}
+
+		// 初始化
+		updateModelStatus();
+		syncPerformanceData();
+	</script>
+    <script src="main.js"></script>
+</body>
+</html>
