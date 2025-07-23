@@ -66351,12 +66351,21 @@ void main() {
 				}else {
 					let response = await fetch(urlOctree, {
 						headers: {
-							'content-type': 'multipart/byteranges',
 							'Range': `bytes=${first}-${last}`,
+							'Accept': 'application/octet-stream', 
 						},
+						mode: 'cors', 
 					});
-
-					buffer = await response.arrayBuffer();
+					// 兼容服务端不支持 Range 的情况
+					if (response.status === 200) {
+						// 手动截取需要的字节范围
+						const fullBuffer = await response.arrayBuffer();
+						const start = Number(first);
+						const end = Number(last);
+						buffer = fullBuffer.slice(start, end + 1); // slice 是 [start, end)，所以 +1
+					} else {
+						buffer = await response.arrayBuffer();
+					}
 				}
 
 				let workerPath;
