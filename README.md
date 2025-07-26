@@ -2,7 +2,9 @@
 
 index.html —— 主页
 
-cesium-viewer —— DJI Terra 生成的3D Tiles文件渲染
+cesium-viewer —— DJI Terra 生成的3D Tiles文件渲染（使用激光雷达数据）
+
+cesium-viewer —— DJI Terra 生成的3D Tiles文件渲染（使用激光雷达的可见光数据，此模型无空洞问题）
 
 gaussian-splatting —— 来源于DJI Terra 和 Gaussian-Splatting项目训练的高斯模型渲染，渲染技术支持来自：Splat
 
